@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>CERF2 — Dashboard Localités</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1A2B;
+    --bg-alt:#0A1420;
+    --panel:#15243A;
+    --panel-hi:#1C3049;
+    --line:#28405E;
+    --text:#EAF0F8;
+    --muted:#8CA0BC;
+    --gold:#E5A93C;
+    --gold-dim:#8A6A2E;
+    --teal:#4FB6AC;
+    --coral:#E0685A;
+    --violet:#8C7CD9;
+    --host:#4FB6AC;
+    --refugee:#E5A93C;
+    --returnee:#8C7CD9;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  body{
+    background-image:
+      radial-gradient(ellipse at top left, rgba(229,169,60,0.06), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(79,182,172,0.06), transparent 55%);
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:28px 24px 60px;}
+
+  /* Header */
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px;border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:24px;}
+  .hdr .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;}
+  .hdr h1{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .hdr .sub{color:var(--muted);font-size:13px;margin-top:6px;}
+
+  .wilaya-switch{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;}
+  .wilaya-switch button{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:13px;color:var(--muted);
+    background:transparent;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .wilaya-switch button.active{background:var(--gold);color:#241a06;}
+  .wilaya-switch button:hover:not(.active){color:var(--text);background:var(--panel-hi);}
+
+  /* KPI row */
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:22px;}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 14px;position:relative;overflow:hidden;}
+  .kpi .val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--text);}
+  .kpi .lbl{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.3;}
+  .kpi.accent .val{color:var(--gold);}
+  .kpi.alert .val{color:var(--coral);}
+
+  /* Grid layout */
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:900px){.grid2{grid-template-columns:1fr;} .kpis{grid-template-columns:repeat(3,1fr);}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;}
+  .panel h2{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin:0 0 4px;}
+  .panel .panel-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+
+  select{
+    background:var(--panel-hi);color:var(--text);border:1px solid var(--line);border-radius:8px;
+    font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:7px 10px;cursor:pointer;
+  }
+
+  /* Bar rows */
+  .barrow{display:grid;grid-template-columns:130px 1fr 46px;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;}
+  .barrow .name{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .barrow .track{background:var(--bg-alt);border-radius:5px;height:9px;overflow:hidden;}
+  .barrow .fill{height:100%;border-radius:5px;background:linear-gradient(90deg, var(--gold-dim), var(--gold));}
+  .barrow .fill.teal{background:linear-gradient(90deg,#2a6560, var(--teal));}
+  .barrow .n{font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:right;font-size:11.5px;}
+
+  /* Donut */
+  .donut-wrap{display:flex;align-items:center;gap:20px;}
+  .legend{display:flex;flex-direction:column;gap:10px;font-size:12.5px;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:8px;}
+  .legend .row{display:flex;justify-content:space-between;gap:14px;color:var(--muted);}
+  .legend .row b{color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:500;}
+
+  /* Trend chart */
+  .trend-panel{margin-bottom:16px;}
+  svg text{font-family:'IBM Plex Mono',monospace;fill:var(--muted);font-size:9.5px;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel);
+  }
+  thead th:hover{color:var(--gold);}
+  tbody td{padding:9px 10px;border-bottom:1px solid rgba(40,64,94,0.4);color:var(--text);}
+  tbody tr:hover{background:var(--panel-hi);}
+  .num{font-family:'IBM Plex Mono',monospace;text-align:right;color:var(--muted);}
+  .table-scroll{max-height:480px;overflow-y:auto;border-radius:8px;}
+  input#search{
+    background:var(--panel-hi);border:1px solid var(--line);color:var(--text);border-radius:8px;
+    padding:8px 12px;font-size:12.5px;font-family:'Inter',sans-serif;width:220px;
+  }
+  input#search::placeholder{color:var(--muted);}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;}
+  .badge.host{background:rgba(79,182,172,0.15);color:var(--teal);}
+  .badge.mixed{background:rgba(229,169,60,0.15);color:var(--gold);}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+
+  .foot{margin-top:20px;color:var(--muted);font-size:11px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div>
+      <p class="eyebrow">CERF2 · Mauritanie · Cliniques mobiles</p>
+      <h1>Dashboard consultations par Localité</h1>
+      <p class="sub">Hodh Chargui &amp; Guidimakha — Août 2025 à Juin 2026</p>
+    </div>
+    <div class="wilaya-switch" id="wilayaSwitch"></div>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Consultations par Moughataa</h2>
+          <p class="panel-sub" style="margin-bottom:0">Cliquer une barre pour filtrer les localités ci-dessous</p>
+        </div>
+      </div>
+      <div id="moughataaBars"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Répartition par statut</h2>
+      <p class="panel-sub">Communauté hôtes vs déplacées</p>
+      <div class="donut-wrap">
+        <svg width="130" height="130" viewBox="0 0 130 130" id="donut"></svg>
+        <div class="legend" id="donutLegend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel trend-panel">
+    <h2>Tendance mensuelle des consultations</h2>
+    <p class="panel-sub">Volume mensuel par wilaya, Août 2025 → Juin 2026</p>
+    <svg id="trendChart" width="100%" height="200" viewBox="0 0 1180 200" preserveAspectRatio="none" style="overflow:visible"></svg>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Détail par localité</h2>
+        <p class="panel-sub" id="localiteSub" style="margin-bottom:0">150 localités au total</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select id="moughataaFilter"></select>
+        <input id="search" type="text" placeholder="Rechercher une localité…">
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="Localité (nettoyée)">Localité</th>
+            <th data-key="Moughataa">Moughataa</th>
+            <th data-key="Total consultations" class="num">Total</th>
+            <th data-key="% Féminin" class="num">% Fém.</th>
+            <th data-key="Âge moyen" class="num">Âge moy.</th>
+            <th data-key="Nb CPN" class="num">CPN</th>
+            <th data-key="Nb PF" class="num">PF</th>
+            <th data-key="Nb en situation de handicap" class="num">Handicap</th>
+            <th data-key="statut">Profil</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="foot">Source : Analyse_CERF2_HodhChargui_Guidimakha_Nettoyée.xlsx — données agrégées par localité, moughataa et wilaya</p>
+</div>
+
+<script>
+</script>
+<script>const RAW_DATA = {"wilaya": [{"Wilaya": "Hodh Chargui", "Total consultations": 3865, "Communauté Hôtes": 1925, "Réfugiée": 1299, "Retournée": 630, "% Féminin": 0.8690815006468305, "Âge moyen": 26.864165588615784, "Nb en situation de handicap": 24, "Nb CPN": 926, "Nb PF": 111, "Nb VBG": 6, "Nb IST": 0, "Nb Vaccination": 66, "Nb Kit de dignité": 296, "Nb Référence médicale": 112}, {"Wilaya": "Guidimakha", "Total consultations": 2965, "Communauté Hôtes": 2789, "Réfugiée": 1, "Retournée": 13, "% Féminin": 0.9170320404721753, "Âge moyen": 26.649578414839798, "Nb en situation de handicap": 9, "Nb CPN": 960, "Nb PF": 232, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 273, "Nb Kit de dignité": 0, "Nb Référence médicale": 51}], "total": {"Wilaya": "TOTAL Projet", "Total consultations": 6830, "Communauté Hôtes": 4714, "Réfugiée": 1300, "Retournée": 643, "% Féminin": 0.8898975109809664, "Âge moyen": 26.771010248901902, "Nb en situation de handicap": 33, "Nb CPN": 1886, "Nb PF": 343, "Nb VBG": 6, "Nb IST": 0, "Nb Vaccination": 339, "Nb Kit de dignité": 296, "Nb Référence médicale": 163}, "moughataa": [{"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Total consultations": 1923, "Communauté Hôtes": 1806, "Réfugiée": 1, "Retournée": 6, "% Féminin": 0.9141965678627145, "Âge moyen": 27.51222048881955, "Nb en situation de handicap": 6, "Nb CPN": 538, "Nb PF": 122, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 148, "Nb Kit de dignité": 0, "Nb Référence médicale": 40, "Motif de consultation principal": "Consultation générale", "Consultation générale": 982, "CPN": 538, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 23, "PF": 122, "Vaccination des enfants et HPV": 148, "CPoN": 13, "Infection sexuellement transmissible": 0, "VBG": 0, "Accouchement": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Total consultations": 832, "Communauté Hôtes": 783, "Réfugiée": 0, "Retournée": 6, "% Féminin": 0.9110576923076923, "Âge moyen": 25.134615384615383, "Nb en situation de handicap": 2, "Nb CPN": 297, "Nb PF": 99, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 107, "Nb Kit de dignité": 0, "Nb Référence médicale": 8, "Motif de consultation principal": "CPN", "Consultation générale": 275, "CPN": 297, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 1, "PF": 99, "Vaccination des enfants et HPV": 107, "CPoN": 8, "Infection sexuellement transmissible": 0, "VBG": 0, "Accouchement": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Wompou", "Total consultations": 210, "Communauté Hôtes": 200, "Réfugiée": 0, "Retournée": 1, "% Féminin": 0.9666666666666667, "Âge moyen": 24.752380952380953, "Nb en situation de handicap": 1, "Nb CPN": 125, "Nb PF": 11, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 18, "Nb Kit de dignité": 0, "Nb Référence médicale": 3, "Motif de consultation principal": "CPN", "Consultation générale": 14, "CPN": 125, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 4, "PF": 11, "Vaccination des enfants et HPV": 18, "CPoN": 37, "Infection sexuellement transmissible": 0, "VBG": 0, "Accouchement": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Total consultations": 1292, "Communauté Hôtes": 514, "Réfugiée": 680, "Retournée": 92, "% Féminin": 0.8893188854489165, "Âge moyen": 28.256965944272444, "Nb en situation de handicap": 7, "Nb CPN": 194, "Nb PF": 27, "Nb VBG": 1, "Nb IST": 0, "Nb Vaccination": 2, "Nb Kit de dignité": 0, "Nb Référence médicale": 82, "Motif de consultation principal": "Consultation générale", "Consultation générale": 732, "CPN": 194, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 36, "PF": 27, "Vaccination des enfants et HPV": 2, "CPoN": 9, "Infection sexuellement transmissible": 0, "VBG": 1, "Accouchement": 2}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Total consultations": 893, "Communauté Hôtes": 439, "Réfugiée": 107, "Retournée": 347, "% Féminin": 0.845464725643897, "Âge moyen": 24.96528555431131, "Nb en situation de handicap": 2, "Nb CPN": 196, "Nb PF": 32, "Nb VBG": 4, "Nb IST": 0, "Nb Vaccination": 2, "Nb Kit de dignité": 199, "Nb Référence médicale": 0, "Motif de consultation principal": "Consultation générale", "Consultation générale": 412, "CPN": 196, "Consultation pédiatrique": 0, "Kit de dignité": 199, "Consultation gynécologique": 12, "PF": 32, "Vaccination des enfants et HPV": 2, "CPoN": 31, "Infection sexuellement transmissible": 0, "VBG": 4, "Accouchement": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Total consultations": 701, "Communauté Hôtes": 304, "Réfugiée": 301, "Retournée": 92, "% Féminin": 0.9172610556348074, "Âge moyen": 29.121255349500714, "Nb en situation de handicap": 6, "Nb CPN": 319, "Nb PF": 29, "Nb VBG": 1, "Nb IST": 0, "Nb Vaccination": 33, "Nb Kit de dignité": 1, "Nb Référence médicale": 20, "Motif de consultation principal": "CPN", "Consultation générale": 221, "CPN": 319, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 27, "PF": 29, "Vaccination des enfants et HPV": 33, "CPoN": 12, "Infection sexuellement transmissible": 0, "VBG": 1, "Accouchement": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Total consultations": 493, "Communauté Hôtes": 249, "Réfugiée": 160, "Retournée": 84, "% Féminin": 0.8073022312373225, "Âge moyen": 25.419878296146045, "Nb en situation de handicap": 5, "Nb CPN": 84, "Nb PF": 5, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 0, "Nb Kit de dignité": 96, "Nb Référence médicale": 7, "Motif de consultation principal": "Consultation générale", "Consultation générale": 209, "CPN": 84, "Consultation pédiatrique": 0, "Kit de dignité": 96, "Consultation gynécologique": 29, "PF": 5, "Vaccination des enfants et HPV": 0, "CPoN": 1, "Infection sexuellement transmissible": 0, "VBG": 0, "Accouchement": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Total consultations": 485, "Communauté Hôtes": 419, "Réfugiée": 51, "Retournée": 14, "% Féminin": 0.8515463917525773, "Âge moyen": 24.903092783505155, "Nb en situation de handicap": 3, "Nb CPN": 133, "Nb PF": 18, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 29, "Nb Kit de dignité": 0, "Nb Référence médicale": 3, "Motif de consultation principal": "Consultation générale", "Consultation générale": 143, "CPN": 133, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 53, "PF": 18, "Vaccination des enfants et HPV": 29, "CPoN": 8, "Infection sexuellement transmissible": 0, "VBG": 0, "Accouchement": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Oualata", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 4, "Nb en situation de handicap": 1, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb IST": 0, "Nb Vaccination": 0, "Nb Kit de dignité": 0, "Nb Référence médicale": 0, "Motif de consultation principal": "Consultation générale", "Consultation générale": 1, "CPN": 0, "Consultation pédiatrique": 0, "Kit de dignité": 0, "Consultation gynécologique": 0, "PF": 0, "Vaccination des enfants et HPV": 0, "CPoN": 0, "Infection sexuellement transmissible": 0, "VBG": 0, "Accouchement": 0}], "localite": [{"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Kininkoumou", "Total consultations": 339, "Communauté Hôtes": 334, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.887905604719764, "Âge moyen": 28.778761061946902, "Nb en situation de handicap": 1, "Nb CPN": 30, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Beikher", "Total consultations": 310, "Communauté Hôtes": 297, "Réfugiée": 0, "Retournée": 3, "% Féminin": 0.8838709677419355, "Âge moyen": 26.058064516129033, "Nb en situation de handicap": 1, "Nb CPN": 32, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Tachott", "Total consultations": 298, "Communauté Hôtes": 290, "Réfugiée": 0, "Retournée": 3, "% Féminin": 0.9932885906040269, "Âge moyen": 28.973154362416107, "Nb en situation de handicap": 2, "Nb CPN": 162, "Nb PF": 15, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Souvi", "Total consultations": 308, "Communauté Hôtes": 266, "Réfugiée": 0, "Retournée": 3, "% Féminin": 0.961038961038961, "Âge moyen": 28.558441558441558, "Nb en situation de handicap": 1, "Nb CPN": 81, "Nb PF": 42, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Kinderla", "Total consultations": 183, "Communauté Hôtes": 75, "Réfugiée": 95, "Retournée": 13, "% Féminin": 0.8415300546448088, "Âge moyen": 26.224043715846996, "Nb en situation de handicap": 1, "Nb CPN": 9, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Kleiva", "Total consultations": 176, "Communauté Hôtes": 41, "Réfugiée": 134, "Retournée": 1, "% Féminin": 0.9772727272727273, "Âge moyen": 27.920454545454547, "Nb en situation de handicap": 0, "Nb CPN": 7, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Deimagha", "Total consultations": 164, "Communauté Hôtes": 136, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8109756097560976, "Âge moyen": 21.829268292682926, "Nb en situation de handicap": 0, "Nb CPN": 8, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Mazauzia", "Total consultations": 136, "Communauté Hôtes": 112, "Réfugiée": 14, "Retournée": 10, "% Féminin": 0.8676470588235294, "Âge moyen": 23.75, "Nb en situation de handicap": 0, "Nb CPN": 26, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 31}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Libreini", "Total consultations": 128, "Communauté Hôtes": 26, "Réfugiée": 101, "Retournée": 1, "% Féminin": 0.8515625, "Âge moyen": 22.4453125, "Nb en situation de handicap": 0, "Nb CPN": 12, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Mousafrine", "Total consultations": 123, "Communauté Hôtes": 109, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8373983739837398, "Âge moyen": 28.902439024390244, "Nb en situation de handicap": 1, "Nb CPN": 11, "Nb PF": 8, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Kossana", "Total consultations": 122, "Communauté Hôtes": 60, "Réfugiée": 61, "Retournée": 1, "% Féminin": 0.9098360655737705, "Âge moyen": 28.68032786885246, "Nb en situation de handicap": 0, "Nb CPN": 18, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Adala", "Total consultations": 122, "Communauté Hôtes": 119, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9836065573770492, "Âge moyen": 25.008196721311474, "Nb en situation de handicap": 0, "Nb CPN": 74, "Nb PF": 27, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Ehel Senoussi", "Total consultations": 117, "Communauté Hôtes": 50, "Réfugiée": 8, "Retournée": 59, "% Féminin": 0.9401709401709402, "Âge moyen": 27.641025641025642, "Nb en situation de handicap": 0, "Nb CPN": 13, "Nb PF": 7, "Nb VBG": 0, "Nb Kit de dignité": 40}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Legdeira", "Total consultations": 116, "Communauté Hôtes": 102, "Réfugiée": 1, "Retournée": 13, "% Féminin": 0.75, "Âge moyen": 27.637931034482758, "Nb en situation de handicap": 1, "Nb CPN": 8, "Nb PF": 7, "Nb VBG": 1, "Nb Kit de dignité": 14}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Tleih ehl Soueidi", "Total consultations": 106, "Communauté Hôtes": 49, "Réfugiée": 18, "Retournée": 39, "% Féminin": 0.8584905660377359, "Âge moyen": 24.735849056603772, "Nb en situation de handicap": 0, "Nb CPN": 14, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 19}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Nere", "Total consultations": 109, "Communauté Hôtes": 47, "Réfugiée": 53, "Retournée": 9, "% Féminin": 0.9908256880733946, "Âge moyen": 32.477064220183486, "Nb en situation de handicap": 0, "Nb CPN": 38, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Daizane", "Total consultations": 105, "Communauté Hôtes": 89, "Réfugiée": 13, "Retournée": 3, "% Féminin": 0.638095238095238, "Âge moyen": 31.428571428571427, "Nb en situation de handicap": 1, "Nb CPN": 3, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Mbouriya Chame", "Total consultations": 100, "Communauté Hôtes": 66, "Réfugiée": 17, "Retournée": 17, "% Féminin": 0.78, "Âge moyen": 22.9, "Nb en situation de handicap": 0, "Nb CPN": 23, "Nb PF": 8, "Nb VBG": 0, "Nb Kit de dignité": 19}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Mekhel Ewlad Alouch", "Total consultations": 100, "Communauté Hôtes": 22, "Réfugiée": 71, "Retournée": 7, "% Féminin": 0.93, "Âge moyen": 21.49, "Nb en situation de handicap": 0, "Nb CPN": 20, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Ligathe", "Total consultations": 97, "Communauté Hôtes": 88, "Réfugiée": 6, "Retournée": 3, "% Féminin": 0.9587628865979382, "Âge moyen": 25.20618556701031, "Nb en situation de handicap": 0, "Nb CPN": 37, "Nb PF": 0, "Nb VBG": 1, "Nb Kit de dignité": 1}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Kouneib", "Total consultations": 92, "Communauté Hôtes": 8, "Réfugiée": 1, "Retournée": 83, "% Féminin": 0.8043478260869565, "Âge moyen": 17.75, "Nb en situation de handicap": 0, "Nb CPN": 20, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 27}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Touryime", "Total consultations": 109, "Communauté Hôtes": 99, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.963302752293578, "Âge moyen": 34.3394495412844, "Nb en situation de handicap": 1, "Nb CPN": 7, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Guemou", "Total consultations": 91, "Communauté Hôtes": 91, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8901098901098901, "Âge moyen": 22.593406593406595, "Nb en situation de handicap": 1, "Nb CPN": 29, "Nb PF": 6, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "College", "Total consultations": 90, "Communauté Hôtes": 87, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9555555555555556, "Âge moyen": 34.06666666666667, "Nb en situation de handicap": 0, "Nb CPN": 13, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Wendou Goube", "Total consultations": 89, "Communauté Hôtes": 86, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.7528089887640449, "Âge moyen": 8.719101123595506, "Nb en situation de handicap": 0, "Nb CPN": 12, "Nb PF": 6, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Nazaha", "Total consultations": 87, "Communauté Hôtes": 85, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9770114942528736, "Âge moyen": 26.275862068965516, "Nb en situation de handicap": 0, "Nb CPN": 53, "Nb PF": 19, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Wompou", "Localité (nettoyée)": "Agoinit", "Total consultations": 87, "Communauté Hôtes": 78, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9195402298850575, "Âge moyen": 24.04597701149425, "Nb en situation de handicap": 1, "Nb CPN": 42, "Nb PF": 7, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Zreigat", "Total consultations": 86, "Communauté Hôtes": 64, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.813953488372093, "Âge moyen": 16.63953488372093, "Nb en situation de handicap": 0, "Nb CPN": 46, "Nb PF": 4, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Djeigui 1", "Total consultations": 83, "Communauté Hôtes": 17, "Réfugiée": 50, "Retournée": 16, "% Féminin": 0.7831325301204819, "Âge moyen": 30.518072289156628, "Nb en situation de handicap": 2, "Nb CPN": 22, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 6}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Coumbadao", "Total consultations": 77, "Communauté Hôtes": 77, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 27.766233766233768, "Nb en situation de handicap": 0, "Nb CPN": 61, "Nb PF": 10, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "OumLaakrich", "Total consultations": 74, "Communauté Hôtes": 74, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9054054054054054, "Âge moyen": 26.094594594594593, "Nb en situation de handicap": 3, "Nb CPN": 18, "Nb PF": 6, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Moudji", "Total consultations": 72, "Communauté Hôtes": 70, "Réfugiée": 0, "Retournée": 2, "% Féminin": 0.8055555555555556, "Âge moyen": 18.77777777777778, "Nb en situation de handicap": 0, "Nb CPN": 16, "Nb PF": 10, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Hassi Labyadh", "Total consultations": 69, "Communauté Hôtes": 55, "Réfugiée": 14, "Retournée": 0, "% Féminin": 0.8260869565217391, "Âge moyen": 23.420289855072465, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Bousta", "Total consultations": 70, "Communauté Hôtes": 70, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8857142857142857, "Âge moyen": 23.685714285714287, "Nb en situation de handicap": 0, "Nb CPN": 9, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Oumsboua", "Total consultations": 69, "Communauté Hôtes": 69, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.7681159420289855, "Âge moyen": 22.565217391304348, "Nb en situation de handicap": 0, "Nb CPN": 14, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Ksar Elbarka", "Total consultations": 65, "Communauté Hôtes": 34, "Réfugiée": 12, "Retournée": 19, "% Féminin": 0.9692307692307692, "Âge moyen": 27.46153846153846, "Nb en situation de handicap": 0, "Nb CPN": 41, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Bounewara", "Total consultations": 63, "Communauté Hôtes": 58, "Réfugiée": 1, "Retournée": 4, "% Féminin": 0.8412698412698413, "Âge moyen": 22.603174603174605, "Nb en situation de handicap": 0, "Nb CPN": 10, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Baghdad", "Total consultations": 60, "Communauté Hôtes": 26, "Réfugiée": 32, "Retournée": 1, "% Féminin": 0.7166666666666667, "Âge moyen": 38.56666666666667, "Nb en situation de handicap": 0, "Nb CPN": 9, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Sweimethia", "Total consultations": 60, "Communauté Hôtes": 54, "Réfugiée": 5, "Retournée": 0, "% Féminin": 0.7833333333333333, "Âge moyen": 20.533333333333335, "Nb en situation de handicap": 2, "Nb CPN": 6, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Wompou", "Localité (nettoyée)": "Diegui", "Total consultations": 59, "Communauté Hôtes": 58, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 22.949152542372882, "Nb en situation de handicap": 0, "Nb CPN": 49, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Wompou", "Localité (nettoyée)": "Chalkhyouba", "Total consultations": 57, "Communauté Hôtes": 57, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 27.614035087719298, "Nb en situation de handicap": 0, "Nb CPN": 27, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Legtouaa", "Total consultations": 56, "Communauté Hôtes": 0, "Réfugiée": 56, "Retournée": 0, "% Féminin": 0.8392857142857143, "Âge moyen": 28.642857142857142, "Nb en situation de handicap": 2, "Nb CPN": 13, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Lhssey Lapyad", "Total consultations": 56, "Communauté Hôtes": 12, "Réfugiée": 24, "Retournée": 17, "% Féminin": 0.875, "Âge moyen": 32.625, "Nb en situation de handicap": 0, "Nb CPN": 6, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Rkeyna", "Total consultations": 55, "Communauté Hôtes": 25, "Réfugiée": 3, "Retournée": 27, "% Féminin": 0.8727272727272727, "Âge moyen": 32.527272727272724, "Nb en situation de handicap": 1, "Nb CPN": 11, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 18}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Boulkhaye", "Total consultations": 55, "Communauté Hôtes": 55, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8363636363636363, "Âge moyen": 27.054545454545455, "Nb en situation de handicap": 0, "Nb CPN": 12, "Nb PF": 4, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Chbar", "Total consultations": 53, "Communauté Hôtes": 39, "Réfugiée": 11, "Retournée": 3, "% Féminin": 0.7735849056603774, "Âge moyen": 23.58490566037736, "Nb en situation de handicap": 2, "Nb CPN": 10, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 7}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Rag", "Total consultations": 53, "Communauté Hôtes": 11, "Réfugiée": 13, "Retournée": 29, "% Féminin": 1, "Âge moyen": 23.433962264150942, "Nb en situation de handicap": 0, "Nb CPN": 34, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 17}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Djeigui 2", "Total consultations": 52, "Communauté Hôtes": 6, "Réfugiée": 35, "Retournée": 11, "% Féminin": 0.8269230769230769, "Âge moyen": 21.557692307692307, "Nb en situation de handicap": 0, "Nb CPN": 14, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 19}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Oumlaadham", "Total consultations": 52, "Communauté Hôtes": 50, "Réfugiée": 2, "Retournée": 0, "% Féminin": 0.8653846153846154, "Âge moyen": 21.384615384615383, "Nb en situation de handicap": 0, "Nb CPN": 14, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Deyzan", "Total consultations": 52, "Communauté Hôtes": 12, "Réfugiée": 8, "Retournée": 32, "% Féminin": 1, "Âge moyen": 21.596153846153847, "Nb en situation de handicap": 0, "Nb CPN": 21, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 19}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Souheinide2", "Total consultations": 52, "Communauté Hôtes": 0, "Réfugiée": 50, "Retournée": 2, "% Féminin": 0.9423076923076923, "Âge moyen": 29.25, "Nb en situation de handicap": 0, "Nb CPN": 29, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Taganitt", "Total consultations": 50, "Communauté Hôtes": 16, "Réfugiée": 8, "Retournée": 26, "% Féminin": 0.82, "Âge moyen": 28.04, "Nb en situation de handicap": 0, "Nb CPN": 4, "Nb PF": 0, "Nb VBG": 1, "Nb Kit de dignité": 9}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Souheinide 3", "Total consultations": 49, "Communauté Hôtes": 0, "Réfugiée": 49, "Retournée": 0, "% Féminin": 0.9795918367346939, "Âge moyen": 29.183673469387756, "Nb en situation de handicap": 0, "Nb CPN": 21, "Nb PF": 6, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Artemou", "Total consultations": 47, "Communauté Hôtes": 47, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 28.04255319148936, "Nb en situation de handicap": 0, "Nb CPN": 35, "Nb PF": 12, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Damandale", "Total consultations": 46, "Communauté Hôtes": 46, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8695652173913043, "Âge moyen": 45.17391304347826, "Nb en situation de handicap": 1, "Nb CPN": 4, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Jedidah", "Total consultations": 42, "Communauté Hôtes": 41, "Réfugiée": 0, "Retournée": 1, "% Féminin": 0.9523809523809523, "Âge moyen": 26.80952380952381, "Nb en situation de handicap": 0, "Nb CPN": 23, "Nb PF": 9, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Souheinide1", "Total consultations": 41, "Communauté Hôtes": 0, "Réfugiée": 40, "Retournée": 1, "% Féminin": 0.8048780487804879, "Âge moyen": 30.170731707317074, "Nb en situation de handicap": 0, "Nb CPN": 17, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Likhreiza", "Total consultations": 40, "Communauté Hôtes": 14, "Réfugiée": 26, "Retournée": 0, "% Féminin": 0.925, "Âge moyen": 29.2, "Nb en situation de handicap": 0, "Nb CPN": 24, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Feirenni", "Total consultations": 38, "Communauté Hôtes": 1, "Réfugiée": 4, "Retournée": 33, "% Féminin": 0.9210526315789473, "Âge moyen": 31.57894736842105, "Nb en situation de handicap": 1, "Nb CPN": 20, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Boutanda", "Total consultations": 38, "Communauté Hôtes": 37, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 28.210526315789473, "Nb en situation de handicap": 0, "Nb CPN": 37, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Helsaloum", "Total consultations": 38, "Communauté Hôtes": 34, "Réfugiée": 1, "Retournée": 0, "% Féminin": 0.9736842105263158, "Âge moyen": 28.86842105263158, "Nb en situation de handicap": 0, "Nb CPN": 8, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Cleyve", "Total consultations": 37, "Communauté Hôtes": 20, "Réfugiée": 14, "Retournée": 2, "% Féminin": 0.7027027027027027, "Âge moyen": 21.43243243243243, "Nb en situation de handicap": 0, "Nb CPN": 6, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Liglav", "Total consultations": 35, "Communauté Hôtes": 8, "Réfugiée": 4, "Retournée": 23, "% Féminin": 0.9714285714285714, "Âge moyen": 23.37142857142857, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 10, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Ndrenawi", "Total consultations": 35, "Communauté Hôtes": 22, "Réfugiée": 13, "Retournée": 0, "% Féminin": 0.8, "Âge moyen": 18.142857142857142, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 8}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Bagdad", "Total consultations": 33, "Communauté Hôtes": 2, "Réfugiée": 6, "Retournée": 25, "% Féminin": 0.9393939393939394, "Âge moyen": 26.818181818181817, "Nb en situation de handicap": 0, "Nb CPN": 18, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Deide Gholei", "Total consultations": 30, "Communauté Hôtes": 14, "Réfugiée": 8, "Retournée": 8, "% Féminin": 1, "Âge moyen": 28.7, "Nb en situation de handicap": 0, "Nb CPN": 19, "Nb PF": 3, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Samba Kandji", "Total consultations": 29, "Communauté Hôtes": 29, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 36.3448275862069, "Nb en situation de handicap": 0, "Nb CPN": 21, "Nb PF": 7, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Celare", "Total consultations": 30, "Communauté Hôtes": 1, "Réfugiée": 28, "Retournée": 1, "% Féminin": 0.7, "Âge moyen": 30.9, "Nb en situation de handicap": 0, "Nb CPN": 4, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Debaye Said", "Total consultations": 27, "Communauté Hôtes": 27, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9629629629629629, "Âge moyen": 27.296296296296298, "Nb en situation de handicap": 0, "Nb CPN": 13, "Nb PF": 9, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Lighaze", "Total consultations": 26, "Communauté Hôtes": 20, "Réfugiée": 3, "Retournée": 2, "% Féminin": 1, "Âge moyen": 22.923076923076923, "Nb en situation de handicap": 0, "Nb CPN": 14, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Debaye Hametou", "Total consultations": 26, "Communauté Hôtes": 25, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9230769230769231, "Âge moyen": 23.423076923076923, "Nb en situation de handicap": 0, "Nb CPN": 16, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Lbeneibari", "Total consultations": 26, "Communauté Hôtes": 26, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8846153846153846, "Âge moyen": 31.423076923076923, "Nb en situation de handicap": 0, "Nb CPN": 11, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Kendra", "Total consultations": 25, "Communauté Hôtes": 0, "Réfugiée": 19, "Retournée": 6, "% Féminin": 1, "Âge moyen": 22.16, "Nb en situation de handicap": 0, "Nb CPN": 22, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Rachid", "Total consultations": 25, "Communauté Hôtes": 0, "Réfugiée": 24, "Retournée": 0, "% Féminin": 1, "Âge moyen": 27.56, "Nb en situation de handicap": 0, "Nb CPN": 24, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Wassa", "Total consultations": 24, "Communauté Hôtes": 0, "Réfugiée": 23, "Retournée": 1, "% Féminin": 0.625, "Âge moyen": 28.583333333333332, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Ehle Bewba", "Total consultations": 23, "Communauté Hôtes": 20, "Réfugiée": 3, "Retournée": 0, "% Féminin": 1, "Âge moyen": 29, "Nb en situation de handicap": 0, "Nb CPN": 12, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Nebka", "Total consultations": 22, "Communauté Hôtes": 7, "Réfugiée": 4, "Retournée": 11, "% Féminin": 1, "Âge moyen": 21.636363636363637, "Nb en situation de handicap": 0, "Nb CPN": 10, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 8}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Maghadougou", "Total consultations": 22, "Communauté Hôtes": 22, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.7727272727272727, "Âge moyen": 35.31818181818182, "Nb en situation de handicap": 0, "Nb CPN": 2, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Zouiratte", "Total consultations": 22, "Communauté Hôtes": 13, "Réfugiée": 7, "Retournée": 1, "% Féminin": 0.7272727272727273, "Âge moyen": 23.045454545454547, "Nb en situation de handicap": 1, "Nb CPN": 1, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Guedereni", "Total consultations": 21, "Communauté Hôtes": 16, "Réfugiée": 5, "Retournée": 0, "% Féminin": 1, "Âge moyen": 127, "Nb en situation de handicap": 2, "Nb CPN": 5, "Nb PF": 5, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Libher", "Total consultations": 21, "Communauté Hôtes": 19, "Réfugiée": 0, "Retournée": 2, "% Féminin": 1, "Âge moyen": 31.666666666666668, "Nb en situation de handicap": 0, "Nb CPN": 13, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Koussene", "Total consultations": 22, "Communauté Hôtes": 14, "Réfugiée": 3, "Retournée": 5, "% Féminin": 0.8636363636363636, "Âge moyen": 30.727272727272727, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Dar Elbarka", "Total consultations": 21, "Communauté Hôtes": 7, "Réfugiée": 2, "Retournée": 12, "% Féminin": 0.9047619047619048, "Âge moyen": 26.238095238095237, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 5}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Hasi ehl Ahmed Lhaje", "Total consultations": 19, "Communauté Hôtes": 19, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.5263157894736842, "Âge moyen": 23.05263157894737, "Nb en situation de handicap": 0, "Nb CPN": 4, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Gourel Boure", "Total consultations": 19, "Communauté Hôtes": 17, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 26.42105263157895, "Nb en situation de handicap": 0, "Nb CPN": 16, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Beteniye", "Total consultations": 19, "Communauté Hôtes": 6, "Réfugiée": 2, "Retournée": 11, "% Féminin": 1, "Âge moyen": 22.842105263157894, "Nb en situation de handicap": 0, "Nb CPN": 11, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 8}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Sédré", "Total consultations": 16, "Communauté Hôtes": 16, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.8125, "Âge moyen": 23.375, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Yangui Liksar", "Total consultations": 16, "Communauté Hôtes": 16, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 31.75, "Nb en situation de handicap": 0, "Nb CPN": 9, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Tichilitghargue", "Total consultations": 15, "Communauté Hôtes": 10, "Réfugiée": 4, "Retournée": 1, "% Féminin": 0.3333333333333333, "Âge moyen": 22.466666666666665, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Ehl Boube", "Total consultations": 15, "Communauté Hôtes": 14, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.7333333333333333, "Âge moyen": 22.466666666666665, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Hassi Salek", "Total consultations": 16, "Communauté Hôtes": 16, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 30.5625, "Nb en situation de handicap": 0, "Nb CPN": 9, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Djiguenni", "Total consultations": 15, "Communauté Hôtes": 13, "Réfugiée": 1, "Retournée": 1, "% Féminin": 1, "Âge moyen": 27.866666666666667, "Nb en situation de handicap": 1, "Nb CPN": 15, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Non identifié", "Total consultations": 15, "Communauté Hôtes": 14, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.9333333333333333, "Âge moyen": 31.933333333333334, "Nb en situation de handicap": 0, "Nb CPN": 7, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Lghedeyr", "Total consultations": 15, "Communauté Hôtes": 7, "Réfugiée": 1, "Retournée": 7, "% Féminin": 1, "Âge moyen": 25.266666666666666, "Nb en situation de handicap": 0, "Nb CPN": 10, "Nb PF": 4, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Douweikar", "Total consultations": 14, "Communauté Hôtes": 1, "Réfugiée": 13, "Retournée": 0, "% Féminin": 1, "Âge moyen": 24.642857142857142, "Nb en situation de handicap": 0, "Nb CPN": 14, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Aghur", "Total consultations": 14, "Communauté Hôtes": 4, "Réfugiée": 10, "Retournée": 0, "% Féminin": 0.9285714285714286, "Âge moyen": 27.714285714285715, "Nb en situation de handicap": 0, "Nb CPN": 3, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Rachid (côté Bagdad)", "Total consultations": 12, "Communauté Hôtes": 0, "Réfugiée": 12, "Retournée": 0, "% Féminin": 0.8333333333333334, "Âge moyen": 16.916666666666668, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "ElMekhle", "Total consultations": 12, "Communauté Hôtes": 2, "Réfugiée": 8, "Retournée": 2, "% Féminin": 1, "Âge moyen": 29.416666666666668, "Nb en situation de handicap": 0, "Nb CPN": 12, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Libnaibaly", "Total consultations": 12, "Communauté Hôtes": 12, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 28.5, "Nb en situation de handicap": 0, "Nb CPN": 11, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Bouhevra", "Total consultations": 11, "Communauté Hôtes": 0, "Réfugiée": 11, "Retournée": 0, "% Féminin": 0.36363636363636365, "Âge moyen": 27.181818181818183, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Samasak", "Total consultations": 11, "Communauté Hôtes": 9, "Réfugiée": 1, "Retournée": 0, "% Féminin": 1, "Âge moyen": 30.636363636363637, "Nb en situation de handicap": 0, "Nb CPN": 11, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Lhweiratte", "Total consultations": 10, "Communauté Hôtes": 0, "Réfugiée": 9, "Retournée": 1, "% Féminin": 0.8, "Âge moyen": 25, "Nb en situation de handicap": 0, "Nb CPN": 3, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Ghabou", "Localité (nettoyée)": "Non identifié", "Total consultations": 9, "Communauté Hôtes": 9, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 30.77777777777778, "Nb en situation de handicap": 0, "Nb CPN": 3, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Tlehgoubia", "Total consultations": 9, "Communauté Hôtes": 4, "Réfugiée": 1, "Retournée": 4, "% Féminin": 1, "Âge moyen": 28.333333333333332, "Nb en situation de handicap": 0, "Nb CPN": 9, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Ahel Eguelaye", "Total consultations": 8, "Communauté Hôtes": 0, "Réfugiée": 8, "Retournée": 0, "% Féminin": 1, "Âge moyen": 14.875, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 8}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Beikheir Bilal", "Total consultations": 7, "Communauté Hôtes": 6, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.5714285714285714, "Âge moyen": 46.142857142857146, "Nb en situation de handicap": 0, "Nb CPN": 3, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Ehelgueiay", "Total consultations": 7, "Communauté Hôtes": 4, "Réfugiée": 1, "Retournée": 2, "% Féminin": 1, "Âge moyen": 25.714285714285715, "Nb en situation de handicap": 0, "Nb CPN": 7, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Teganete", "Total consultations": 6, "Communauté Hôtes": 5, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 19, "Nb en situation de handicap": 0, "Nb CPN": 4, "Nb PF": 0, "Nb VBG": 2, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Sweymnte", "Total consultations": 6, "Communauté Hôtes": 6, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 23.166666666666668, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 2, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Rmeil", "Total consultations": 5, "Communauté Hôtes": 0, "Réfugiée": 3, "Retournée": 2, "% Féminin": 1, "Âge moyen": 15.2, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 5}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Telihegouby", "Total consultations": 5, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 5, "% Féminin": 1, "Âge moyen": 15.8, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 5}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Selibaby", "Total consultations": 5, "Communauté Hôtes": 5, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 34.4, "Nb en situation de handicap": 0, "Nb CPN": 2, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Wompou", "Localité (nettoyée)": "Chalkh", "Total consultations": 4, "Communauté Hôtes": 4, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 27.25, "Nb en situation de handicap": 0, "Nb CPN": 4, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Lougdour", "Total consultations": 4, "Communauté Hôtes": 2, "Réfugiée": 2, "Retournée": 0, "% Féminin": 1, "Âge moyen": 28.5, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Echayve", "Total consultations": 4, "Communauté Hôtes": 4, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.75, "Âge moyen": 13.25, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Zweyrat", "Total consultations": 4, "Communauté Hôtes": 3, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 30, "Nb en situation de handicap": 0, "Nb CPN": 2, "Nb PF": 1, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Leiciss", "Total consultations": 3, "Communauté Hôtes": 3, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0.3333333333333333, "Âge moyen": 55, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Wompou", "Localité (nettoyée)": "Non identifié", "Total consultations": 3, "Communauté Hôtes": 3, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 23, "Nb en situation de handicap": 0, "Nb CPN": 3, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Khedjetou Med Lemine", "Total consultations": 3, "Communauté Hôtes": 0, "Réfugiée": 3, "Retournée": 0, "% Féminin": 1, "Âge moyen": 13.333333333333334, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Bassiknou", "Total consultations": 3, "Communauté Hôtes": 2, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 20, "Nb en situation de handicap": 1, "Nb CPN": 0, "Nb PF": 1, "Nb VBG": 1, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Non identifié", "Total consultations": 3, "Communauté Hôtes": 2, "Réfugiée": 1, "Retournée": 0, "% Féminin": 1, "Âge moyen": 22.333333333333332, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Maguenata", "Total consultations": 3, "Communauté Hôtes": 3, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 41.333333333333336, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Djeigui", "Total consultations": 3, "Communauté Hôtes": 0, "Réfugiée": 3, "Retournée": 0, "% Féminin": 0.6666666666666666, "Âge moyen": 24, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Rmeyh", "Total consultations": 3, "Communauté Hôtes": 2, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 24.666666666666668, "Nb en situation de handicap": 0, "Nb CPN": 3, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Sabil", "Total consultations": 2, "Communauté Hôtes": 0, "Réfugiée": 2, "Retournée": 0, "% Féminin": 1, "Âge moyen": 25, "Nb en situation de handicap": 0, "Nb CPN": 2, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Dadgheli", "Total consultations": 2, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 2, "% Féminin": 1, "Âge moyen": 57.5, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Teleyh ehel Seweyde", "Total consultations": 2, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 21, "Nb en situation de handicap": 0, "Nb CPN": 2, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Non identifié", "Total consultations": 2, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 1, "% Féminin": 0.5, "Âge moyen": 4, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Lining", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 34, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Tache", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 46, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Tandia", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 28, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Kinik", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 46, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Kibili", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 7, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Agoinit", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 30, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Hassi /labyad", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 4, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Amourj", "Localité (nettoyée)": "Ehil Sambe", "Total consultations": 2, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 2, "% Féminin": 1, "Âge moyen": 12.5, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 2}, {"Wilaya": "Hodh Chargui", "Moughataa": "Adel Bagrou", "Localité (nettoyée)": "Tehele el Swedi", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 14, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 1}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Liniment", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 41, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Guidimakha", "Moughataa": "Sélibaby", "Localité (nettoyée)": "Leicice", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 92, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Hassi Twil", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 1, "% Féminin": 0, "Âge moyen": 5, "Nb en situation de handicap": 1, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Kindjerie", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 18, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Laklave", "Total consultations": 2, "Communauté Hôtes": 2, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 28, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Lmakel", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0, "Âge moyen": 60, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Jenderle", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 1, "Retournée": 0, "% Féminin": 1, "Âge moyen": 46, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Carbatou", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 8, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Bassiknou", "Localité (nettoyée)": "Fasala", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 28, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Fereny", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 39, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Djigueni", "Localité (nettoyée)": "Kasr Barkhe", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 1, "Âge moyen": 30, "Nb en situation de handicap": 0, "Nb CPN": 1, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Oualata", "Localité (nettoyée)": "Non identifié", "Total consultations": 1, "Communauté Hôtes": 0, "Réfugiée": 0, "Retournée": 1, "% Féminin": 1, "Âge moyen": 4, "Nb en situation de handicap": 1, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}, {"Wilaya": "Hodh Chargui", "Moughataa": "Timbedra", "Localité (nettoyée)": "Hasi ehl Abdi", "Total consultations": 1, "Communauté Hôtes": 1, "Réfugiée": 0, "Retournée": 0, "% Féminin": 0, "Âge moyen": 3, "Nb en situation de handicap": 0, "Nb CPN": 0, "Nb PF": 0, "Nb VBG": 0, "Nb Kit de dignité": 0}], "tendance": [{"Mois": "2025-08", "Hodh Chargui": 120, "Guidimakha": 565, "TOTAL": 685}, {"Mois": "2025-09", "Hodh Chargui": 19, "Guidimakha": 275, "TOTAL": 294}, {"Mois": "2025-10", "Hodh Chargui": 463, "Guidimakha": 234, "TOTAL": 697}, {"Mois": "2025-11", "Hodh Chargui": 228, "Guidimakha": 206, "TOTAL": 434}, {"Mois": "2025-12", "Hodh Chargui": 187, "Guidimakha": 127, "TOTAL": 314}, {"Mois": "2026-01", "Hodh Chargui": 586, "Guidimakha": 53, "TOTAL": 639}, {"Mois": "2026-02", "Hodh Chargui": 417, "Guidimakha": 169, "TOTAL": 586}, {"Mois": "2026-03", "Hodh Chargui": 478, "Guidimakha": 142, "TOTAL": 620}, {"Mois": "2026-04", "Hodh Chargui": 687, "Guidimakha": 797, "TOTAL": 1484}, {"Mois": "2026-05", "Hodh Chargui": 307, "Guidimakha": 166, "TOTAL": 473}, {"Mois": "2026-06", "Hodh Chargui": 353, "Guidimakha": 212, "TOTAL": 565}]};</script>
+<script>
+const D = RAW_DATA;
+let currentWilaya = "TOUTES";
+let currentMoughataa = "TOUTES";
+let sortKey = "Total consultations";
+let sortDir = -1;
+
+const fmt = n => n===undefined||n===null ? "-" : n.toLocaleString('fr-FR');
+const pct = n => n===undefined||n===null ? "-" : (n*100).toFixed(0)+"%";
+const dec1 = n => n===undefined||n===null ? "-" : n.toFixed(1);
+
+// ---------- Wilaya switch ----------
+const wilayaNames = D.wilaya.map(w=>w.Wilaya);
+const switchEl = document.getElementById('wilayaSwitch');
+function renderSwitch(){
+  switchEl.innerHTML = "";
+  ["TOUTES", ...wilayaNames].forEach(name=>{
+    const b = document.createElement('button');
+    b.textContent = name === "TOUTES" ? "Les deux wilayas" : name;
+    if(name===currentWilaya) b.classList.add('active');
+    b.onclick = ()=>{ currentWilaya = name; currentMoughataa = "TOUTES"; renderAll(); };
+    switchEl.appendChild(b);
+  });
+}
+
+// ---------- helpers to compute filtered aggregates ----------
+function getWilayaRow(){
+  if(currentWilaya==="TOUTES") return D.total;
+  return D.wilaya.find(w=>w.Wilaya===currentWilaya);
+}
+function getMoughataaRows(){
+  return D.moughataa.filter(m=> currentWilaya==="TOUTES" ? true : m.Wilaya===currentWilaya)
+                     .sort((a,b)=>b['Total consultations']-a['Total consultations']);
+}
+function getLocaliteRows(){
+  let rows = D.localite.filter(l=> currentWilaya==="TOUTES" ? true : l.Wilaya===currentWilaya);
+  if(currentMoughataa!=="TOUTES") rows = rows.filter(l=>l.Moughataa===currentMoughataa);
+  return rows;
+}
+
+// ---------- KPI row ----------
+function renderKpis(){
+  const w = getWilayaRow();
+  const kpiRow = document.getElementById('kpiRow');
+  const items = [
+    {v: fmt(w['Total consultations']), l:'Total consultations', accent:true},
+    {v: pct(w['% Féminin']), l:'% Féminin'},
+    {v: dec1(w['Âge moyen'])+' ans', l:'Âge moyen'},
+    {v: fmt(w['Réfugiée']), l:'Réfugiées'},
+    {v: fmt(w['Retournée']), l:'Retournées'},
+    {v: fmt(w['Nb VBG']), l:'Cas VBG signalés', alert:true},
+  ];
+  kpiRow.innerHTML = items.map(i=>`
+    <div class="kpi ${i.accent?'accent':''} ${i.alert?'alert':''}">
+      <div class="val">${i.v}</div>
+      <div class="lbl">${i.l}</div>
+    </div>`).join('');
+}
+
+// ---------- Moughataa bars ----------
+function renderMoughataaBars(){
+  const rows = getMoughataaRows();
+  const max = Math.max(...rows.map(r=>r['Total consultations']));
+  const el = document.getElementById('moughataaBars');
+  el.innerHTML = rows.map(r=>`
+    <div class="barrow" data-m="${r.Moughataa}" style="cursor:pointer">
+      <div class="name">${r.Moughataa}</div>
+      <div class="track"><div class="fill" style="width:${(r['Total consultations']/max*100).toFixed(1)}%"></div></div>
+      <div class="n">${fmt(r['Total consultations'])}</div>
+    </div>`).join('');
+  el.querySelectorAll('.barrow').forEach(row=>{
+    row.onclick = ()=>{
+      currentMoughataa = row.dataset.m;
+      document.getElementById('moughataaFilter').value = currentMoughataa;
+      renderTable();
+      updateLocaliteSub();
+    };
+  });
+}
+
+// ---------- Donut ----------
+function renderDonut(){
+  const w = getWilayaRow();
+  const host = w['Communauté Hôtes']||0, ref = w['Réfugiée']||0, ret = w['Retournée']||0;
+  const total = host+ref+ret;
+  const segs = [
+    {v:host, c:'var(--host)', label:'Communauté hôtes'},
+    {v:ref, c:'var(--refugee)', label:'Réfugiées'},
+    {v:ret, c:'var(--returnee)', label:'Retournées'},
+  ];
+  const svg = document.getElementById('donut');
+  const r = 55, cx=65, cy=65, circ = 2*Math.PI*r;
+  let offset = 0;
+  let paths = '';
+  segs.forEach(s=>{
+    const frac = total? s.v/total : 0;
+    const len = frac*circ;
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.c}" stroke-width="16"
+      stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += len;
+  });
+  svg.innerHTML = paths + `<circle cx="${cx}" cy="${cy}" r="${r-16}" fill="var(--panel)"/>`;
+  const legend = document.getElementById('donutLegend');
+  legend.innerHTML = segs.map(s=>`
+    <div class="row"><span><span class="dot" style="background:${s.c}"></span>${s.label}</span><b>${fmt(s.v)}</b></div>
+  `).join('');
+}
+
+// ---------- Trend chart ----------
+function renderTrend(){
+  const svg = document.getElementById('trendChart');
+  const months = D.tendance.map(t=>t.Mois);
+  const seriesKeys = currentWilaya==="TOUTES" ? ["Hodh Chargui","Guidimakha"] : [currentWilaya];
+  const colors = {"Hodh Chargui":"var(--gold)", "Guidimakha":"var(--teal)"};
+  const W=1180,H=200,padL=36,padR=10,padT=14,padB=26;
+  const maxV = Math.max(...D.tendance.map(t=> currentWilaya==="TOUTES" ? t.TOTAL : t[currentWilaya]));
+  const x = i => padL + i*(W-padL-padR)/(months.length-1);
+  const y = v => H-padB - (v/maxV)*(H-padT-padB);
+
+  let grid = '';
+  for(let g=0; g<=4; g++){
+    const gv = maxV*g/4;
+    grid += `<line x1="${padL}" y1="${y(gv)}" x2="${W-padR}" y2="${y(gv)}" stroke="#28405E" stroke-width="1" stroke-dasharray="3,4"/>`;
+    grid += `<text x="4" y="${y(gv)+3}">${Math.round(gv)}</text>`;
+  }
+  let axisLabels = months.map((m,i)=>`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${m.slice(5)}</text>`).join('');
+
+  let lines = '';
+  seriesKeys.forEach(k=>{
+    const pts = D.tendance.map((t,i)=> `${x(i)},${y(t[k])}`).join(' ');
+    lines += `<polyline points="${pts}" fill="none" stroke="${colors[k]||'var(--gold)'}" stroke-width="2.5"/>`;
+    D.tendance.forEach((t,i)=>{
+      lines += `<circle cx="${x(i)}" cy="${y(t[k])}" r="3" fill="${colors[k]||'var(--gold)'}"/>`;
+    });
+  });
+
+  svg.innerHTML = grid + axisLabels + lines;
+}
+
+// ---------- Moughataa filter select ----------
+function renderMoughataaFilter(){
+  const sel = document.getElementById('moughataaFilter');
+  const names = [...new Set(getMoughataaRows().map(m=>m.Moughataa))];
+  sel.innerHTML = `<option value="TOUTES">Toutes les moughataa</option>` +
+    names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  sel.value = currentMoughataa;
+  sel.onchange = ()=>{ currentMoughataa = sel.value; renderTable(); updateLocaliteSub(); };
+}
+
+function updateLocaliteSub(){
+  const rows = getLocaliteRows();
+  document.getElementById('localiteSub').textContent = `${rows.length} localité(s)` + (currentMoughataa!=="TOUTES" ? ` — ${currentMoughataa}`: '') + (currentWilaya!=="TOUTES" ? ` — ${currentWilaya}` : '');
+}
+
+// ---------- Table ----------
+function renderTable(){
+  let rows = getLocaliteRows();
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  if(q) rows = rows.filter(r=> r['Localité (nettoyée)'].toLowerCase().includes(q));
+  rows = rows.slice().sort((a,b)=>{
+    let av = a[sortKey], bv = b[sortKey];
+    if(sortKey==='statut'){ av = a['Communauté Hôtes']/a['Total consultations']; bv = b['Communauté Hôtes']/b['Total consultations']; }
+    if(typeof av === 'string') return sortDir*av.localeCompare(bv);
+    return sortDir*((av||0)-(bv||0));
+  });
+  const body = document.getElementById('tableBody');
+  body.innerHTML = rows.map(r=>{
+    const hostRatio = r['Communauté Hôtes']/r['Total consultations'];
+    const badge = hostRatio>0.9 ? `<span class="badge host">Hôtes</span>` : `<span class="badge mixed">Mixte</span>`;
+    return `<tr>
+      <td>${r['Localité (nettoyée)']}</td>
+      <td style="color:var(--muted)">${r.Moughataa}</td>
+      <td class="num">${fmt(r['Total consultations'])}</td>
+      <td class="num">${pct(r['% Féminin'])}</td>
+      <td class="num">${dec1(r['Âge moyen'])}</td>
+      <td class="num">${fmt(r['Nb CPN'])}</td>
+      <td class="num">${fmt(r['Nb PF'])}</td>
+      <td class="num">${fmt(r['Nb en situation de handicap'])}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('thead th').forEach(th=>{
+  th.onclick = ()=>{
+    const key = th.dataset.key;
+    if(sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=-1; }
+    renderTable();
+  };
+});
+document.getElementById('search').oninput = renderTable;
+
+function renderAll(){
+  renderSwitch();
+  renderKpis();
+  renderMoughataaBars();
+  renderDonut();
+  renderTrend();
+  renderMoughataaFilter();
+  updateLocaliteSub();
+  renderTable();
+}
+renderAll();
+</script>
+</body>
+</html>
